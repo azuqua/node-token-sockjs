@@ -1,4 +1,3 @@
-
 <h1>Token Socket Server</h1>
 <p>
 	A small wrapper around express, sockjs, and redis that provides additional websocket functionality.
@@ -130,9 +129,9 @@
 	});
 
 	// remove the TTL on unauthorized sockets
-	server.disableCleanup();
+	tokenServer.disableCleanup();
 
 	// close all sockets and unsubscribe from all channels
-	server.shutdown();
+	tokenServer.shutdown();
 
 </pre>
