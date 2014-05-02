@@ -80,8 +80,10 @@
 				callback(error); // no token will be issued
 			else if(!resp)
 				callback(null, false); // no token will be issued
+			else if(typeof resp === "string")
+				callback(null, true); // token will be issued and req.session will be attached to each socket
 			else
-				callback(null, true);
+				callback(null, { foo: "bar" }); // token will be issued and this object will be attached to each socket
 		});
 	};
 
