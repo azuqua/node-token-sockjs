@@ -1,0 +1,48 @@
+{
+  "name": "node-token-sockjs",
+  "description": "A small server wrapper around express, sockjs-node, and redis that provides token based authentication, a websocket based rpc-like abstraction, and optional distributed channel pub/sub.",
+  "version": "0.1.0",
+  "author": "Azuqua",
+  "keywords": [
+    "azuqua",
+    "websocket",
+    "sockjs",
+    "token",
+    "authentication",
+    "redis",
+    "pub-sub"
+  ],
+  "contributors": [{
+    "name": "Alec Embke",
+    "url": "alec@azuqua.com"
+  }],
+  "licenses": [{
+    "type": "MIT",
+    "url": "http://opensource.org/licenses/mit-license.php"
+  }],
+  "scripts": {
+    "test": "grunt test",
+    "lint": "grunt lint"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/aembke/node-token-sockjs"
+  },
+  "dependencies": {
+    "async": "~0.2.10",
+    "underscore": "~1.6.0",
+    "node-uuid": "~1.4.1"
+  },
+  "devDependencies": {
+    "chai": "*",
+    "grunt": "~0.4.2",
+    "grunt-contrib-clean": "~0.5.0",
+    "grunt-contrib-jshint": "~0.8.0",
+    "grunt-mocha-test": "~0.9.4",
+    "sockjs": "~0.3.8",
+    "sockjs-client-ws": "~0.3.4",
+    "redis": "~0.10.1",
+    "express": "~0.3.8"
+  },
+  "main": "./index.js"
+}
