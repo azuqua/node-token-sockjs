@@ -33,9 +33,20 @@ Monitor.prototype.handleResponse = function(data){
 		else
 			fn(null, data.resp);
 		delete this.inTransit[data.rpc][data.uuid];
-	}else{
+	}else if(this.messageCallback){
 		this.messageCallback(data.channel, data.message);
 	}
+};
+
+var handleInternal = function(instance, command, data){
+	switch(command){
+		case "subscribe":
+			instance._channels[data.channel] = true;
+		break;
+		case "unsubscribe":
+			delete instance._channels[data.channel];
+		break;
+	};
 };
 
 var MockClient = function(host, token, prefix){
@@ -57,7 +68,10 @@ var MockClient = function(host, token, prefix){
 	self.monitor = new Monitor(self.socket);
 	self.socket.onmessage = function(e){
 		e.data = JSON.parse(e.data);
-		self.monitor.handleResponse(e.data);
+		if(e.data.internal)
+			handleInternal(self, e.data.command, e.data.data);
+		else
+			self.monitor.handleResponse(e.data);
 	};
 };
 
