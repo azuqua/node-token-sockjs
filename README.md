@@ -94,6 +94,9 @@
 	
 	// note: by default tokens only work once. if the client needs to reconnect it will need to request a new token
 
+	// turn on debugging
+	options.debug = true;
+
 	var tokenServer = new TokenSocketServer(options);
 
 	// put a 5 second TTL on all unauthorized sockets

@@ -42,7 +42,8 @@
     "sockjs": "~0.3.8",
     "sockjs-client-ws": "~0.3.4",
     "redis": "~0.10.1",
-    "express": "~0.3.8"
+    "express": "~0.3.8",
+    "restjs": "azuqua/restjs"
   },
   "main": "./index.js"
 }
