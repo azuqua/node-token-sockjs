@@ -1,4 +1,3 @@
-
 <h1>Token Socket Server</h1>
 <p>
 	A small wrapper around express, sockjs, and redis that provides additional websocket functionality.
@@ -81,8 +80,10 @@
 				callback(error); // no token will be issued
 			else if(!resp)
 				callback(null, false); // no token will be issued
+			else if(typeof resp === "string")
+				callback(null, true); // token will be issued and req.session will be attached to each socket
 			else
-				callback(null, true);
+				callback(null, { foo: "bar" }); // token will be issued and this object will be attached to each socket
 		});
 	};
 
@@ -133,9 +134,9 @@
 	});
 
 	// remove the TTL on unauthorized sockets
-	server.disableCleanup();
+	tokenServer.disableCleanup();
 
 	// close all sockets and unsubscribe from all channels
-	server.shutdown();
+	tokenServer.shutdown();
 
 </pre>
