@@ -73,6 +73,8 @@
 
 	// if options.authentication is a function then it will be called on each token request with the request object and a callback as parameters
 	// the callback must be called with a truthy second parameter for the client to be issued a token
+	// if the callback's second parameter is an object it will be attached to the socket
+	// otherwise req.session will be attached to the socket
 	options.authentication = function(req, callback){
 		// query a database, interact with passport, etc
 		doSomethingAsync(req.query, function(error, resp){
