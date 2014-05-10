@@ -1,6 +1,7 @@
 
 var assert = require("chai").assert,
 	express = require("express"),
+	uuid = require("node-uuid"),
 	http = require("http"),
 	redis = require("redis"),
 	sockjs = require("sockjs"),
@@ -54,7 +55,8 @@ var options = {
 	pubsubClient: pubsubClient,
 	socketServer: socketServer,
 	socketController: controller,
-	customMiddleware: testMiddleware
+	customMiddleware: testMiddleware,
+	authentication: tokenAuth
 };
 
 
@@ -66,8 +68,10 @@ var requestToken = function(route, callback){
 		method: "GET",
 		path: route
 	};
-	restClient.request(opts, {}, callback);
+	restClient.request(opts, "", callback);;
 };
+
+
 
 describe("Token Socket Server test suite", function(){
 
@@ -124,7 +128,7 @@ describe("Token Socket Server test suite", function(){
 
 		it("Should disallow invalid token requests", function(done){
 			requestToken(options.tokenRoute, function(error, resp){
-				assert.isUndefined(error, "Error is undefined");
+				assert.notOk(error, "Error is undefined");
 				assert.equal(resp.statusCode, 400, "Response status code is 400");
 				assert.include(resp.body, "Unauthorized", "Response returns unauthorized");
 				done();
@@ -133,22 +137,24 @@ describe("Token Socket Server test suite", function(){
 
 		it("Should allow valid token requests", function(done){
 			requestToken(options.tokenRoute + "?allow=1", function(error, resp){
-				assert.isUndefined(error, "Error is undefined");
+				assert.notOk(error, "Error is undefined");
 				assert.equal(resp.statusCode, 200, "Response status code is 200");
 				resp.body = JSON.parse(resp.body);
 				assert.isObject(resp.body, "Response body is valid JSON");
-				assert.hasProperty(resp.body, "token", "Response contains token property");
+				assert.property(resp.body, "token", "Response contains token property");
 				assert.isString(resp.body.token, "Response token is string");
+				done()
 			});
 		});
 
 		it("Should pass token requests through custom middleware", function(done){
 			requestToken(options.tokenRoute + "?middleware=1", function(error, resp){
-				assert.isUndefined(error, "Error is undefined");
+				assert.notOk(error, "Error is undefined");
 				assert.equal(resp.statusCode, 200, "Response status code is 200");
 				resp.body = JSON.parse(resp.body);
 				assert.isObject(resp.body, "Response body is valid JSON");
-				assert.hasProperty(resp.body, "middleware", "Response contains middleware property");
+				assert.property(resp.body, "middleware", "Response contains middleware property");
+				done();
 			});
 		});
 
@@ -157,7 +163,7 @@ describe("Token Socket Server test suite", function(){
 				var token = JSON.parse(resp.body).token;
 				var socket = new MockClient("http://127.0.0.1:" + port, token, options.prefix);
 				socket.ready(function(error){
-					assert.isUndefined(error, "Socket handshake error is undefined");
+					assert.isNull(error, "Socket handshake error is undefined");
 					socket.end();
 					done();
 				});
@@ -171,7 +177,7 @@ describe("Token Socket Server test suite", function(){
 				socket.ready(function(error){
 					var req = { foo: "bar" };
 					socket.rpc("echo", { foo: "bar" }, function(error, resp){
-						assert.isUndefined(error, "Echo error is undefined");
+						assert.notOk(error, "Echo error is undefined");
 						assert.isObject(resp, "Echo response is object");
 						assert.deepEqual(resp, req, "Echo response object is the same as the request object");
 						socket.end();
@@ -184,7 +190,7 @@ describe("Token Socket Server test suite", function(){
 		describe("Publish - subscribe testing", function(){
 
 			var testChannel = "channel",
-				testChannel2 = "channel2"
+				testChannel2 = "channel2",
 				testData = { foo: "bar" },
 				socket;
 
@@ -210,12 +216,12 @@ describe("Token Socket Server test suite", function(){
 					assert.include(socket.channels(), testChannel, "Socket channels include testChannel");
 					assert.include(tokenServer.channels(), testChannel, "Server channels include testChannel");
 					done();
-				}, 1000);
+				}, 500);
 			});
 
 			it("Should allow sockets to publish messages on channels", function(done){
 				assert.isFunction(socket.publish, "Socket implements publish function");
-				socket.publish(testData, testChannel);
+				socket.publish(testChannel, testData);
 				socket.onmessage(function(channel, message){
 					assert.equal(channel, testChannel, "Received message on test channel");
 					assert.deepEqual(message, testData, "Received test message data");
@@ -245,7 +251,7 @@ describe("Token Socket Server test suite", function(){
 					assert.notInclude(socket.channels(), testChannel2, "Socket's channel list does not contain second test channel");
 					assert.notInclude(tokenServer.channels(), testChannel2, "Server's channel list does not contain second test channel");
 					done();
-				}, 1000);
+				}, 500);
 			});
 
 			it("Should prevent sockets from receiving messages on channels they're not subscribed to", function(done){
@@ -254,13 +260,13 @@ describe("Token Socket Server test suite", function(){
 					channel = _channel;
 					message = _message;
 				});
-				socket.publish(testData, testChannel2);
+				socket.publish(testChannel2, testData);
 				setTimeout(function(){
 					socket.onmessage(null);
 					assert.isNull(channel, "Did not receive message on any channel");
-					assert.isNull(message, "Didnot receive any message");
+					assert.isNull(message, "Did not receive any message");
 					done();
-				}, 3000);
+				}, 500);
 			});
 
 			it("Should allow the server to manually subscribe a socket to a channel", function(done){
@@ -279,7 +285,7 @@ describe("Token Socket Server test suite", function(){
 					assert.equal(channel, testChannel2, "Socket received message on correct channel");
 					assert.deepEqual(message, testData, "Socket received correct message");
 					done();
-				}, 2000);
+				}, 500);
 			});
 
 			it("Should allow the server to manually publish a message on a channel", function(done){
@@ -296,7 +302,7 @@ describe("Token Socket Server test suite", function(){
 					assert.equal(channel, testChannel2, "Socket received message on correct channel");
 					assert.deepEqual(message, testData, "Socket received correct message");
 					done();
-				}, 2000);
+				}, 500);
 			});
 
 			it("Should allow the server to manually broadcast messages on all channels", function(done){
@@ -328,13 +334,13 @@ describe("Token Socket Server test suite", function(){
 					assert.isNull(channel, "No message received on any channel");
 					assert.isNull(message, "No message received");
 					done();
-				}, 2000);
+				}, 500);
 				tokenServer.publish(testChannel2, testData);
 			});
 
 			it("Should cleanup unused sockets", function(done){
 				// TODO finish writing tests for cleanup tests
-
+				done();
 			});
 
 		});
@@ -350,7 +356,7 @@ describe("Token Socket Server test suite", function(){
 				assert.lengthOf(tokenServer.sockets(), 0, "Server has no connected sockets");
 				assert.lengthOf(tokenServer.channels(), 0, "Server has no channels");
 				done();
-			}, 1000);
+			}, 100);
 		});
 
 	});

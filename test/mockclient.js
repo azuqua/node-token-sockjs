@@ -52,9 +52,9 @@ var handleInternal = function(instance, command, data){
 var MockClient = function(host, token, prefix){
 	var self = this;
 	self.token = token;
-	self.channels = {};
-	self.socket = new sockjsClient(host + prefix);
-	self.socket.onopen = function(){
+	self._channels = {};
+	self.socket = sockjsClient.create(host + prefix);
+	self.socket.on("connection", function(){
 		self.monitor.sendMessage({
 			rpc: "auth",
 			token: self.token
@@ -64,15 +64,15 @@ var MockClient = function(host, token, prefix){
 			else
 				self.ready(null, true)
 		});
-	};
+	});
 	self.monitor = new Monitor(self.socket);
-	self.socket.onmessage = function(e){
-		e.data = JSON.parse(e.data);
-		if(e.data.internal)
-			handleInternal(self, e.data.command, e.data.data);
+	self.socket.on("data", function(msg){
+		msg = JSON.parse(msg);
+		if(msg.internal)
+			handleInternal(self, msg.command, msg.data);
 		else
-			self.monitor.handleResponse(e.data);
-	};
+			self.monitor.handleResponse(msg);
+	});
 };
 
 MockClient.prototype.ready = function(callback){
@@ -87,7 +87,7 @@ MockClient.prototype.rpc = function(rpc, data, callback){
 };
 
 MockClient.prototype.subscribe = function(channel){
-	this.channels[channel] = true;
+	this._channels[channel] = true;
 	this.monitor.sendMessage({
 		rpc: "_subscribe",
 		req: { channel: channel }
@@ -95,7 +95,7 @@ MockClient.prototype.subscribe = function(channel){
 };
 
 MockClient.prototype.unsubscribe = function(channel){
-	delete this.channels[channel];
+	delete this._channels[channel];
 	this.monitor.sendMessage({
 		rpc: "_unsubscribe",
 		req: { channel: channel }
@@ -112,7 +112,7 @@ MockClient.prototype.publish = function(channel, data){
 	});
 };
 
-MockClient.prototype.broadcast = function(channel, data){
+MockClient.prototype.broadcast = function(data){
 	this.monitor.sendMessage({
 		rpc: "_broadcast",
 		req: { data: data }
@@ -124,7 +124,7 @@ MockClient.prototype.onmessage = function(callback){
 };
 
 MockClient.prototype.channels = function(){
-	return Object.keys(this.channels);
+	return Object.keys(this._channels);
 };
 
 MockClient.prototype.end = function(callback){
