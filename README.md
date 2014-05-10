@@ -129,6 +129,7 @@
 	tokenServer.publish(channels[0], { foo: "bar" });
 
 	// to publish a message on all channels
+	// this will publish the message on all channels, not just the channels that this server instance's sockets have subscribed to
 	tokenServer.broadcast({ foo: "bar" });
 
 	server.listen(process.env.PORT, function(){
