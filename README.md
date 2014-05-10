@@ -37,7 +37,7 @@
 				if(error)
 					callback(error); // the error message will be sent back to the client
 				else
-					callback(null, resp); // resp will be stringified and sent back
+					callback(null, resp); // resp will be sent back
 			});
 		}
 
