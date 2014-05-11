@@ -1,13 +1,17 @@
-<h1>Token Socket Server</h1>
+<h1>Node Token Sockjs Server</h1>
 <p>
 	A small wrapper around express, sockjs, and redis that provides additional websocket functionality.
 </p>
 <p>
-	<h3>Currently supported</h3>
+	<h4>Currently supported</h3>
 	<ul>
 		<li>Token authentication</li>
 		<li>RPC abstraction</li>
 		<li>Channel publish-subscribe</li>
+	</ul>
+	<h4>TODO</h3>
+	<ul>
+		<li>Custom events</li>
 	</ul>
 </p>
 <p>
