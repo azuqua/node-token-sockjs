@@ -3,13 +3,13 @@
 	A small wrapper around express, sockjs, and redis that provides additional websocket functionality.
 </p>
 <p>
-	<h4>Currently supported</h3>
+	<h4>Currently supported</h4>
 	<ul>
 		<li>Token authentication</li>
 		<li>RPC abstraction</li>
 		<li>Channel publish-subscribe</li>
 	</ul>
-	<h4>TODO</h3>
+	<h4>TODO</h4>
 	<ul>
 		<li>Custom events</li>
 	</ul>
