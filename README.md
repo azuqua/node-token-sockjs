@@ -9,10 +9,6 @@
 		<li>RPC abstraction</li>
 		<li>Channel publish-subscribe</li>
 	</ul>
-	<h4>TODO</h4>
-	<ul>
-		<li>Custom events</li>
-	</ul>
 </p>
 <p>
 	<a href="https://github.com/azuqua/jquery-token-sockjs">jQuery Token Sockjs Client</a>
