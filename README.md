@@ -49,7 +49,7 @@
 
 	var socketOptions = {
 		prefix: "/sockets",
-		socketjs_url: "//cdn.sockjs.org/sockjs-0.3.min.js"
+		sockjs_url: "//cdn.sockjs.org/sockjs-0.3.min.js"
 	};
 	socketServer.installHandlers(server, socketOptions);
 
