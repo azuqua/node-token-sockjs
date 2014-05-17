@@ -340,6 +340,7 @@ describe("Token Socket Server test suite", function(){
 
 			it("Should cleanup unused sockets", function(done){
 				// TODO finish writing tests for cleanup tests
+				assert.isString("I am lazy", "Get off your ass and write some tests.");
 				done();
 			});
 
