@@ -1,4 +1,4 @@
-<h1>Token Sockjs Server</h1>
+<h1>Node Token Sockjs Server</h1>
 <p>
 	A wrapper around express, sockjs, and redis that provides additional websocket functionality.
 </p>
@@ -37,7 +37,7 @@
 				if(error)
 					callback(error); // the error message will be sent back to the client
 				else
-					callback(null, resp); // resp will be stringified and sent back
+					callback(null, resp); // resp will be sent back
 			});
 		}
 
@@ -49,7 +49,7 @@
 
 	var socketOptions = {
 		prefix: "/sockets",
-		socketjs_url: "//cdn.sockjs.org/sockjs-0.3.min.js"
+		sockjs_url: "//cdn.sockjs.org/sockjs-0.3.min.js"
 	};
 	socketServer.installHandlers(server, socketOptions);
 
@@ -73,6 +73,8 @@
 
 	// if options.authentication is a function then it will be called on each token request with the request object and a callback as parameters
 	// the callback must be called with a truthy second parameter for the client to be issued a token
+	// if the callback's second parameter is an object it will be attached to the socket
+	// otherwise req.session will be attached to the socket
 	options.authentication = function(req, callback){
 		// query a database, interact with passport, etc
 		doSomethingAsync(req.query, function(error, resp){
@@ -127,6 +129,7 @@
 	tokenServer.publish(channels[0], { foo: "bar" });
 
 	// to publish a message on all channels
+	// this will publish the message on all channels, not just the channels that this server instance's sockets have subscribed to
 	tokenServer.broadcast({ foo: "bar" });
 
 	server.listen(process.env.PORT, function(){
