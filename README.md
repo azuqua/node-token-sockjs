@@ -28,21 +28,6 @@
 	// if you would like to use the pub-sub commands
 	var pubsubClient = redis.createClient();
 
-	// create a controller object that will handle rpc commands, usually in a separate file
-	var controller = {
-		
-		// now clients can issue rpc commands for someRPCFunction
-		someRPCFunction: function(data, callback){
-			somethingAsync(data, function(error, resp){
-				if(error)
-					callback(error); // the error message will be sent back to the client
-				else
-					callback(null, resp); // resp will be sent back
-			});
-		}
-
-	};
-
 	var app = express();
 	var server = http.createServer(app),
 		socketServer = sockjs.createServer();
@@ -52,6 +37,21 @@
 		sockjs_url: "//cdn.sockjs.org/sockjs-0.3.min.js"
 	};
 	socketServer.installHandlers(server, socketOptions);
+
+	// create a controller object that will handle rpc commands, usually in a separate file
+	var controller = {
+		
+		something: function(auth, data, callback){
+			// @auth is the socket's authentication data
+			somethingElse(data, function(error, resp){
+				if(error)
+					callback(error); // the error message will be sent back to the client
+				else
+					callback(null, resp); // resp will be sent back
+			});
+		}
+
+	};
 
 	// wrap the socketServer with the token authentication, etc
 	var options = {
@@ -90,7 +90,7 @@
 	};
 
 	// if options.authentication is a string then the server will check the session parameter keyed by options.authentication
-	// for example, the server will check for req.session.authenticated to determine if the client will be issued a token
+	// here the server will check for req.session.authenticated to determine if the client will be issued a token
 	options.authentication = "authenticated";
 
 	// if options.authentication is undefined the server will default to checking req.session.auth

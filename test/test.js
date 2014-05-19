@@ -27,7 +27,7 @@ socketServer.installHandlers(server, {
 });
 
 var controller = {
-	echo: function(data, callback){
+	echo: function(auth, data, callback){
 		process.nextTick(function(){
 			callback(null, data);
 		});
