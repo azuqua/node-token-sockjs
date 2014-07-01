@@ -59,7 +59,6 @@ var options = {
 	authentication: tokenAuth
 };
 
-
 var restClient = new RestJS({ protocol: "http" });
 var requestToken = function(route, callback){
 	var opts = {
@@ -70,7 +69,6 @@ var requestToken = function(route, callback){
 	};
 	restClient.request(opts, "", callback);;
 };
-
 
 
 describe("Token Socket Server test suite", function(){

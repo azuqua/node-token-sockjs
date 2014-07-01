@@ -49,6 +49,20 @@
 				else
 					callback(null, resp); // resp will be sent back
 			});
+		},
+
+		nested: {
+			
+			more: {
+				
+				// client function call:
+				//   socket.rpc("nested.more.echo", { foo: "bar" }, ...);
+				echo: function(auth, data, callback){
+					callback(null, data);
+				}
+
+			}
+
 		}
 
 	};
