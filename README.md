@@ -117,7 +117,7 @@
 	var tokenServer = new TokenSocketServer(options);
 
 	// put a 5 second TTL on all unauthorized sockets
-	tockenServer.enableCleanup(5000);
+	tokenServer.enableCleanup(5000);
 
 	// get all of the sockets
 	var sockets = tokenServer.sockets();
