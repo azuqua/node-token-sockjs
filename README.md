@@ -3,14 +3,6 @@
 	A wrapper around express, sockjs, and redis that provides additional websocket functionality.
 </p>
 <p>
-	<h3>Supported</h3>
-	<ul>
-		<li>Token authentication</li>
-		<li>RPC abstraction</li>
-		<li>Publish - Subscribe</li>
-	</ul>
-</p>
-<p>
 	<a href="https://github.com/azuqua/jquery-token-sockjs">jQuery Token Sockjs Client</a>
 </p>
 <h1>Usage</h1>
