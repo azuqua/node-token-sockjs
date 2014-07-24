@@ -2,6 +2,9 @@
 <p>
 	A wrapper around express, sockjs, and redis that provides additional websocket functionality.
 </p>
+<pre>
+npm install node-token-sockjs
+</pre>
 <p>
 	<a href="https://github.com/azuqua/jquery-token-sockjs">jQuery Token Sockjs Client</a>
 </p>
