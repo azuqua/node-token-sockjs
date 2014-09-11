@@ -94,7 +94,7 @@ server.listen(process.env.PORT || 8000);
 
 ## RPC Interface
 
-This module supports bidirectional a RPC interface between the server and client. This means the client can issue calls to the server and the server can issue calls to the client with a simple function call/callback interface. This can be very useful for syncing data between a distributed store on the server and any number of clients without relying on a big switch statement on top of a publish/subscribe pattern. The examples here will show how to use the RPC API surface from the server. See the [client docs](https://github.com/azuqua/jquery-token-sockjs) for examples of RPC functions going in the other direction.
+This module supports a bidirectional RPC interface between the server and client. This means the client can issue calls to the server and the server can issue calls to the client with a simple function call/callback interface. This can be very useful for syncing data between a distributed store on the server and any number of clients without relying on a big switch statement on top of a publish/subscribe pattern. The examples here will show how to use the RPC API surface from the server. See the [client docs](https://github.com/azuqua/jquery-token-sockjs) for examples of RPC functions going in the other direction.
 
 ```
 // set up this server to accept RPC commands from the clients
@@ -132,7 +132,7 @@ async.each(tokenServer.sockets(), function(socket, callback){
 
 ## Events
 
-Developers can hook into certain events as well. The server is extended by a generic EventEmitter so developers can attach multiple event listeners to any event. Events listeners related to publish - subscribe actions (subscribe, publish, unsubscribe, broadcast) can be used to enforce access control to certain actions. See below for examples. If multiple listener functions are bound to the same event only one of them needs to return a falsy value for the action to be disallowed.
+Developers can hook into certain events as well. The server is extended by a generic EventEmitter so developers can attach multiple event listeners to any event. Event listeners related to publish - subscribe actions (subscribe, publish, unsubscribe, broadcast) can be used to enforce access control to certain actions. See below for examples. If multiple listener functions are bound to the same event only one of them needs to return a falsy value for the action to be disallowed.
 
 * **authentication** - Fires when the socket successfully authenticates. The listener function will be called with the socket, authentication data, and a callback function. The callback function does not require any arguments.
 * **subscribe** - Fires when a socket attempts to subscribe to a channel. The listener function will be called the socket, subscription data, and a callback function. Calling the callback function with an error or falsy second parameter will disallow the socket from subscribing.
