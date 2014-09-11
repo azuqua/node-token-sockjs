@@ -94,7 +94,7 @@ server.listen(process.env.PORT || 8000);
 
 ## RPC Interface
 
-This module supports bidirectional RPC calls between the server and client. This means the client can issue calls to the server and the server can issue calls to the client with a simple function call/callback interface. This can be very useful for syncing data between a distributed store on the server and any number of clients without relying on a big switch statement on top of a publish/subscribe pattern. The examples here will show how to use the RPC API surface from the server. See the [client docs](https://github.com/azuqua/jquery-token-sockjs) for examples of RPC calls going in the other direction.
+This module supports bidirectional a RPC interface between the server and client. This means the client can issue calls to the server and the server can issue calls to the client with a simple function call/callback interface. This can be very useful for syncing data between a distributed store on the server and any number of clients without relying on a big switch statement on top of a publish/subscribe pattern. The examples here will show how to use the RPC API surface from the server. See the [client docs](https://github.com/azuqua/jquery-token-sockjs) for examples of RPC functions going in the other direction.
 
 ```
 // set up this server to accept RPC commands from the clients
@@ -130,18 +130,53 @@ async.each(tokenServer.sockets(), function(socket, callback){
 
 ```
 
-## Authentication Event
+## Events
 
-Developers can hook into a websocket's initial authentication event as well. This will be called when the socket first provides its authentication token and successfully finds the authentication data.
+Developers can hook into certain events as well. The server is extended by a generic EventEmitter so developers can attach multiple event listeners to any event. Events listeners related to publish - subscribe actions (subscribe, publish, unsubscribe, broadcast) can be used to enforce access control to certain actions. See below for examples. If multiple listener functions are bound to the same event only one of them needs to return a falsy value for the action to be disallowed.
+
+* **authentication** - Fires when the socket successfully authenticates. The listener function will be called with the socket, authentication data, and a callback function. The callback function does not require any arguments.
+* **subscribe** - Fires when a socket attempts to subscribe to a channel. The listener function will be called the socket, subscription data, and a callback function. Calling the callback function with an error or falsy second parameter will disallow the socket from subscribing.
+* **unsubscribe** - Fires when a socket attempts to unsubscribe from a channel. The listener function will be called with the socket, channel data, and a callback function. Calling the callback function with an error or falsy second parameter will disallow the socket from unsubscribing.
+* **publish** - Fires when a socket attempts to publish data on a channel. The listener function will be called with the socket, publish data, and a callback function. Calling the callback function with an error or falsy second parameter will disallow the socket from publishing.
+* **broadcast** - Fires when a socket attempts to broadcast data on all channels. The listener function will be called with the socket, broadcast data, and a callback function. Calling the callback function with an error or falsy second parameter will disallow the socket from broadcasting.
 
 ```
-tokenServer.onAuthentication(function(auth, socket){
-	console.log("Socket successfully authenticated!", auth);
-	// maybe immediately issue a remote RPC call... 
-	tokenServer.rpc(socket, "sayHello", { message: "hello, " + auth.email }, function(error resp){
+tokenServer.on("authentication", function(socket, auth, callback){
+	// maybe immediately say hello
+	tokenServer.rpc(socket, "sayHello", { message: "hello, " + auth.email }, function(error, resp){
 		console.log("Socket client says: ", error, resp);
+		callback(); // the authentication event listener callback does not require any arguments
 	});
 });
+
+// enforce access control to publish - subscribe events
+
+tokenServer.on("subscribe", function(socket, data, callback){
+	console.log("Socket attempting to subscribe: ", data.channel);
+	callback(null, true); // socket will be allowed to subscribe
+});
+
+tokenServer.on("publish", function(socket, data, callback){
+	console.log("Socket attempting to publish: ", data.channel, data.data);
+	callback(null, false); // socket will not be allowed to publish
+});
+
+// when multiple listeners are bound to an event only one of them need return an error or falsy value for the action to be disallowed
+// in this example the broadcast action will be disallowed
+
+tokenServer.on("broadcast", function(socket, data, callback){
+	console.log("Socket attempting to broadcast: ", data.data);
+	callback(null, true); 
+});
+
+tokenServer.on("broadcast", function(socket, data, callback){
+	console.log("Socket attempting to broadcast: ", data.data);
+	callback(null, false); 
+});
+
+// listener functions can be removed with removeListener and removeAllListeners
+
+tokenServer.removeAllListeners("authentication");
 ```
 
 ## Cleanup
