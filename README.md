@@ -120,7 +120,7 @@ tokenServer.socketController.ping = function(auth, data, callback, socket){
 var sockets = tokenServer.sockets();
 setInterval(function(){
 	var socket = sockets[Math.random() * (sockets.length - 1) | 0];
-	tokenServer.rpc(socket, "lisasFirstWord", { bart: "Cant sleep clown will eat me" }, function(error, resp){
+	tokenServer.rpc(socket, "saySomething", { bart: "Cant sleep clown will eat me" }, function(error, resp){
 		console.log("Socket responded: ", error, resp);
 	});
 }, 1000);
