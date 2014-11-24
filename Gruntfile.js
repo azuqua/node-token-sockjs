@@ -5,17 +5,18 @@ module.exports = function (grunt) {
 
     jshint: {
       files: [ 
-        'Gruntfile.js', 
-        'lib/tokensocket.js',
-        'lib/utils.js'
+        "Gruntfile.js",
+        "lib/**/*.js",
+        "test/**/*.js"
       ],
       options: {}
     },
 
     mochaTest: {
       options: { reporter: 'spec', checkLeaks: true },
-      src: ['test/test.js']
+      src: ["test/index.js"]
     }
+
   });
 
   grunt.loadNpmTasks("grunt-contrib-clean");
@@ -23,7 +24,7 @@ module.exports = function (grunt) {
   grunt.loadNpmTasks("grunt-mocha-test");
 
   grunt.registerTask("lint", [ "jshint" ]);
-  grunt.registerTask("test", [ "mochaTest" ]);
+  grunt.registerTask("test", [ "mochaTest", ""]);
   grunt.registerTask("default", [ "lint", "test" ]);
 
 };

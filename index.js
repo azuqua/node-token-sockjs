@@ -1,2 +1,2 @@
 
-module.exports = require("./lib/tokensocket");
+module.exports = require("./lib/server");
