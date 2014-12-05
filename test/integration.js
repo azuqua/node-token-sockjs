@@ -1,64 +1,69 @@
 
-var mocks = require("./mocks");
-
 module.exports = function(TokenSocketServer){
 
-	var express = require("express"),
-		sockjs = require("sockjs"),
-		redis = require("redis"),
-		http = require("http");
+  var express = require("express"),
+      sockjs = require("sockjs"),
+      redis = require("redis"),
+      RestJS = require("restjs"),
+      TokenSocket = require("token-sockjs-client"),
+      http = require("http");
 
-	var redisHost = process.env.REDIS_HOST || "127.0.0.1",
-		redisPort = process.env.REDIS_PORT || 6379;
+  if(typeof RestJS === "object" && RestJS.Rest)
+    RestJS = RestJS.Rest;
 
-	var redisClient = redis.createClient(redisPort, redisHost),
-		pubsubClient = redis.createClient(redisPort, redisHost);
+  var httpClient = new RestJS({ protocol: "http" });
 
-	var app = express(),
-		socketServer = sockjs.createServer();
+  var redisHost = process.env.REDIS_HOST || "127.0.0.1",
+      redisPort = process.env.REDIS_PORT || 6379;
 
-	var server = http.createServer(app),
-		port = process.env.PORT || 6072;
+  var redisClient = redis.createClient(redisPort, redisHost),
+      pubsubClient = redis.createClient(redisPort, redisHost);
 
-	socketServer.installHandlers(server, {
-		prefix: "/sockets",
-	    sockjs_url: "//cdn.sockjs.org/sockjs-0.3.min.js"
-	});
+  var app = express(),
+      socketServer = sockjs.createServer();
 
-	var tokenServer = new TokenSocketServer(app, redisClient, socketServer, {
-		pubsubClient: pubsubClient,
-		socketController: {
-			echo: function(auth, data, callback){
-				callback(null, data);
-			}
-		},
-		authentication: function(req, callback){
-			callback(null, req.param("allow"));
-		}
-	});
+  var server = http.createServer(app),
+      port = process.env.PORT || 6072;
 
-	describe("Client interaction tests", function(){
+  socketServer.installHandlers(server, {
+    prefix: "/sockets",
+    sockjs_url: "//cdn.sockjs.org/sockjs-0.3.min.js"
+  });
 
-		before(function(done){
-			server.listen(port, done);
-		});
+  var tokenServer = new TokenSocketServer(app, redisClient, socketServer, {
+    pubsubClient: pubsubClient,
+    socketController: {
+      echo: function(auth, data, callback){
+        callback(null, data);
+      }
+    },
+    authentication: function(req, callback){
+      callback(null, req.param("allow"));
+    }
+  });
 
-		after(function(){
-			tokenServer.shutdown();
-		});
+  describe("Integration tests", function(){
 
-		var options = {
-			host: "127.0.0.1",
-			port: port,
-			authentication: {
-				allow: 1
-			}
-		};
+    before(function(done){
+      server.listen(port, done);
+    });
 
-		require("./integration/authentication")(tokenServer, options, mocks);
-		require("./integration/rpc")(tokenServer, options, mocks);
-		require("./integration/pubsub")(tokenServer, options, mocks);
+    after(function(){
+      tokenServer.shutdown();
+    });
 
-	});
+    var options = {
+      host: "127.0.0.1",
+      port: port,
+      authentication: {
+        allow: 1
+      }
+    };
+
+    require("./integration/authentication")(tokenServer, httpClient, TokenSocket, options);
+    require("./integration/rpc")(tokenServer, httpClient, TokenSocket, options);
+    require("./integration/pubsub")(tokenServer, httpClient, TokenSocket, options);
+
+  });
 
 };

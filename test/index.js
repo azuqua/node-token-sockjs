@@ -4,10 +4,5 @@ var chai = global.chai = require("chai"),
 
 global.assert = chai.assert;
 
-describe("Unit Tests", function(){
-	require("./unit.js")(TokenSocketServer);
-});
-
-describe("Integration Tests", function(){
-  require("./integration.js")(TokenSocketServer);
-});
+require("./unit.js")(TokenSocketServer);
+require("./integration.js")(TokenSocketServer);
