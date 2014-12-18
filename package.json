@@ -1,6 +1,6 @@
 {
   "name": "node-token-sockjs",
-  "description": "A small server wrapper around express, sockjs-node, and redis that provides token based authentication, a websocket based rpc-like abstraction, and an optional publish subscribe interface.",
+  "description": "A wrapper around express, sockjs-node, and redis that provides token based authentication, a websocket based rpc-like abstraction, and an optional publish subscribe interface.",
   "version": "1.1.4",
   "author": "Azuqua",
   "keywords": [
@@ -38,20 +38,22 @@
   },
   "dependencies": {
     "async": "^0.2.10",
-    "underscore": "^1.6.0",
+    "lodash": "^2.4.1",
     "node-uuid": "^1.4.1"
   },
   "devDependencies": {
     "chai": "^1.9.1",
+    "express": "~3.4.8",
     "grunt": "~0.4.2",
     "grunt-contrib-clean": "~0.5.0",
     "grunt-contrib-jshint": "~0.8.0",
     "grunt-mocha-test": "~0.9.4",
-    "sockjs": "~0.3.8",
-    "sockjs-client-ws": "~0.1.0",
+    "mocha": "^2.0.1",
     "redis": "~0.10.1",
-    "express": "~3.4.8",
-    "restjs": "azuqua/restjs"
+    "restjs": "azuqua/restjs",
+    "sinon": "^1.12.1",
+    "sockjs": "~0.3.8",
+    "token-sockjs-client": "^2.0.0"
   },
   "main": "./index.js"
 }
