@@ -225,7 +225,7 @@ tokenServer.publish("channel", { foo: "bar" });
 
 Broadcasts a message on all channels. If this is running in a distributed environment with a shared redis host this will broadcast the message on all channels, not just the channels that sockets connected to this server instance are subscribed to. 
 
-**This will send the message once on every channel currently known to redis. This means if your client is subscribed to five channels you will receive this message five times, once on each channel.**
+**This will send the message once on every channel currently known to redis. This means if a client is subscribed to five channels it will receive this message five times, once on each channel.**
 
 ```
 tokenServer.broadcast({ foo: "bar" });
