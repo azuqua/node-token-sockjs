@@ -5,8 +5,6 @@ module.exports = function(TokenSocketServer){
 
 	describe("Setup tests", function(){
 
-		
-
 
 	});
 

@@ -1,3 +1,8 @@
+var sinon = require("sinon");
+
+global.defer = function(callback){
+  setTimeout(callback, 15);
+};
 
 module.exports = function(TokenSocketServer){
 
@@ -5,7 +10,8 @@ module.exports = function(TokenSocketServer){
       sockjs = require("sockjs"),
       redis = require("redis"),
       RestJS = require("restjs"),
-      TokenSocket = require("token-sockjs-client"),
+      MockSocket = require("./mocks/socket"),
+      MockSocketServer = require("./mocks/socketServer"),
       http = require("http");
 
   if(typeof RestJS === "object" && RestJS.Rest)
@@ -20,7 +26,7 @@ module.exports = function(TokenSocketServer){
       pubsubClient = redis.createClient(redisPort, redisHost);
 
   var app = express(),
-      socketServer = sockjs.createServer();
+      socketServer = new MockSocketServer();
 
   var server = http.createServer(app),
       port = process.env.PORT || 6072;
@@ -33,10 +39,24 @@ module.exports = function(TokenSocketServer){
   var tokenServer = new TokenSocketServer(app, redisClient, socketServer, {
     pubsubClient: pubsubClient,
     socketController: {
-      echo: function(auth, data, callback){
+      echo: sinon.spy(function(auth, data, callback){
         callback(null, data);
+      }),
+      nested: {
+        echo: sinon.spy(function(auth, data, callback){
+          callback(null, data);
+        })
       }
     },
+    customMiddleware: function(req, res, next){
+      if(req.param("middleware")){
+        res.json({ middleware: 1 });
+      }else{
+        req.session = req.session || {};
+        req.session.foo = "bar";
+        next();
+      }
+    },  
     authentication: function(req, callback){
       callback(null, req.param("allow"));
     }
@@ -60,9 +80,9 @@ module.exports = function(TokenSocketServer){
       }
     };
 
-    require("./integration/authentication")(tokenServer, httpClient, TokenSocket, options);
-    require("./integration/rpc")(tokenServer, httpClient, TokenSocket, options);
-    require("./integration/pubsub")(tokenServer, httpClient, TokenSocket, options);
+    require("./integration/authentication")(tokenServer, httpClient, MockSocket, options);
+    require("./integration/rpc")(tokenServer, httpClient, MockSocket, options);
+    require("./integration/pubsub")(tokenServer, httpClient, MockSocket, options);
 
   });
 
