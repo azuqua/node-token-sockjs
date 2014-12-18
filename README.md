@@ -5,7 +5,7 @@ A wrapper around [Express](http://expressjs.com/), [Sockjs](https://github.com/s
 
 This module is designed to support higher level application functionality on top of websockets or websocket emulation via sockjs. Currently this module provides a token-based authentication mechanism, a publish-subscribe interface, and a bidirectional RPC interface. 
 
-[The associated client library can be found here.](https://github.com/azuqua/jquery-token-sockjs)
+[The client libraries can be found here.](https://github.com/azuqua/token-sockjs-client)
 
 # Install
 
@@ -15,18 +15,25 @@ This module is designed to support higher level application functionality on top
 
 ## Initialization
 
-This module supports the following initialization parameters. All parameters are required unless stated otherwise.
+This module supports the following initialization parameters. The first three named arguments are required and the last options object is optional.
+
+```
+var tokenServer = new TokenSocketServer(app, redisClient, socketServer, options);
+```
 
 * **app** - The express application used for HTTP routing.
+* **redisClient** - The redis client to use for non pub/sub commands. 
+* **socketServer** - The sockjs server instance this module should manage.
+
+The following properties are optional on the options object.
+
 * **prefix** - The route prefix that the sockjs server instance is bound to. The default value for this is "/sockets". This must match the client's configuration and the sockjs server instance configuration.
 * **tokenRoute** - The route the client will use to attempt authentication. The default value for this is "/socket/token". This must match the client's configuration.
-* **redisClient** - The redis client to use for non pub/sub commands.
-* **pubsubClient** - Optional. The redis client to use for pub/sub commands.
-* **socketServer** - The sockjs server instance this module should manage.
-* **socketController** - Optional. An object, arbitrarily nested, mapping RPC function names to functions. See the RPC section for more details. This can be modified dynamically at any time following initialization by editing the server instance's "socketController" object.
-* **customMiddleware** - Optional. Any custom middleware to apply to the token authentication route.
-* **authentication** - The authentication mechanism used to determine if a socket will be issued a token. This property can be a string or object. If it's a string then the module will use the truthiness of the request's session property keyed by this string. For example, the default value for this property is "auth" which will use the truthiness of req.session.auth to decide if the socket should get a token. This property can also be a function which will be passed the request object and a callback. If the callback is called with a truthy second parameter the socket will be issued a token. If the second parameter is an object then this object will be attached to the socket. If the second parameter is not an object then the request's session object will be attached to the socket. See below for examples.
-* **debug** - Optional. A boolean flag used to determine if the module should log relevant actions to the console.
+* **pubsubClient** - The redis client to use for pub/sub commands. This cannot be the same redis client used for non pub/sub commands.
+* **socketController** - An object, arbitrarily nested, mapping RPC function names to functions. See the RPC section for more details. This can be modified dynamically at any time following initialization by editing the server instance's "socketController" object.
+* **customMiddleware** - Any custom middleware to apply to the token authentication route.
+* **authentication** - The authentication mechanism used to determine if a socket will be issued a token. This property can be a string or object. If it's a string then the module will check for the request session property keyed by this string. For example, the default value for this property is "auth" which will use the req.session.auth property to decide if the socket should get a token. This property can also be a function which will be passed the request object and a callback. If the callback is called with a truthy second parameter the socket will be issued a token. If the second parameter is an object then this object will be attached to the socket. If the second parameter is not an object then the request session object will be attached to the socket. See below for examples.
+* **debug** - A boolean flag used to determine if the module should log relevant actions to the console.
 
 ```
 var express = require("express"),
@@ -50,13 +57,15 @@ var socketOptions = {
 socketServer.installHandlers(server, socketOptions);
 
 var authenticationFn = function(req, callback){
-	doSomething(req, function(error, result){
+	doSomething(req, function(error){
+
 		if(error)
-			callback(error); // socket will not be allowed to connect
-		else if(result)
-			callback(null, result); // socket will be issued a token and @result will be attached
-		else 
-			callback(null, true); // socket will be issued a token and req.session will be attached
+			return callback(error); // socket will not be allowed to connect
+
+		if(Math.random() < 0.5)
+			callback(null, req.user); // socket will be issued a token and req.user will be attached to the socket
+		else
+			callback(); // socket will be issued a token and req.session will be attached to the socket
 	});
 };
 
@@ -65,7 +74,7 @@ var controller = {
 	echo: function(auth, data, callback){
 		// here @auth is the second parameter from authenticationFn above, or req.session
 		// see the RPC section below for more information
-		callback(null, data);	
+		callback(null, data);
 	}
 	
 };
@@ -76,13 +85,10 @@ var customMiddleware = function(req, res, next){
 	next();	
 };
 
-var tokenServer = new TokenSocketServer({
-	app: app,
+var tokenServer = new TokenSocketServer(app, redisClient, socketServer, {
 	prefix: socketOptions.prefix,
 	tokenRoute: "/socket/token",
-	redisClient: redisClient,
 	pubsubClient: pubsubClient,
-	socketServer: socketServer,
 	socketController: controller,
 	customMiddleware: customMiddleware,
 	authentication: authenticationFn,
@@ -93,7 +99,7 @@ var tokenServer = new TokenSocketServer({
 
 ## RPC Interface
 
-This module supports a bidirectional RPC interface between the server and client. This means the client can issue calls to the server and the server can issue calls to the client with a simple function call/callback interface. The examples here will show how to use the RPC API surface from the server. See the [client docs](https://github.com/azuqua/jquery-token-sockjs) for examples of RPC functions going in the other direction.
+This module supports a bidirectional RPC interface between the server and client. This means the client can issue calls to the server and the server can issue calls to the client with a simple function call/callback interface. The examples here will show how to use the RPC API surface from the server. See the [client docs](https://github.com/azuqua/token-sockjs-client#rpc-interface) for examples of RPC functions going in the other direction.
 
 ```
 // set up this server to accept RPC commands from the clients
@@ -104,7 +110,7 @@ tokenServer.socketController.ping = function(auth, data, callback, socket){
 	// @auth is the data attached to the socket upon authentication
 	// @data is the data provided by the client when issuing the RPC call
 	// @callback is a function used to issue the final response to the client
-	// @socket is an optional parameter that can be used to issue inner RPC calls, pub/sub operations, etc
+	// @socket is an optional parameter that can be used to issue inner RPC calls, pub/sub operations, etc. If you use this please read the note below this section.
 
 	doSomethingAsync(data, function(error, result){
 		if(error)
@@ -126,17 +132,19 @@ setInterval(function(){
 }, 1000);
 ```
 
+You may notice that the fourth argument to any RPC function on the server is the SockJS socket instance making the request. In many cases you will not use this argument. However, it's there in order to allow developers to make inner RPC calls, perform pub/sub actions, or other functionality exposed and managed by node-token-sockjs. Please resist the urge to make any direct calls to any lower level sockjs functions (even the write function) as they will very likely not give the desired results on the client. Should the client receive any messages it cannot recognize it will silently drop them so any direct calls to socket.write() will most likely not do anything. In the future this module may wrap the socket instance in an object to hide the inner sockjs functions so if you do use the inner sockjs functions directly be aware that the API surface there is not directly supported by this module and may disappear one day. The RPC and pub/sub interfaces should be sufficient for any form of communication to the client.
+
 ## Events
 
 The server is extended by an EventEmitter so developers can attach multiple event listeners to any event. Event listeners related to publish - subscribe actions (subscribe, publish, unsubscribe, broadcast) can be used to enforce access control to certain actions. See below for examples. 
 
 **If multiple listener functions are bound to the same event only one of them needs to return an error or falsy value for the action to be disallowed.**
 
-* **authentication** - Fires when the socket successfully authenticates. The listener function will be called with the socket, authentication data, and a callback function. The callback function does not take any arguments.
-* **subscribe** - Fires when a socket attempts to subscribe to a channel. The listener function will be called the socket, subscription data, and a callback function. Calling the callback function with an error or falsy second parameter will disallow the socket from subscribing.
-* **unsubscribe** - Fires when a socket attempts to unsubscribe from a channel. The listener function will be called with the socket, channel data, and a callback function. Calling the callback function with an error or falsy second parameter will disallow the socket from unsubscribing.
-* **publish** - Fires when a socket attempts to publish data on a channel. The listener function will be called with the socket, publish data, and a callback function. Calling the callback function with an error or falsy second parameter will disallow the socket from publishing.
-* **broadcast** - Fires when a socket attempts to broadcast data on all channels. The listener function will be called with the socket, broadcast data, and a callback function. Calling the callback function with an error or falsy second parameter will disallow the socket from broadcasting.
+* **authentication** - Called when the socket successfully authenticates. The listener function will be called with the socket, authentication data, and a callback function. The callback function does not take any arguments.
+* **subscribe** - Called when a socket attempts to subscribe to a channel. The listener function will be called the socket, subscription data, and a callback function. Calling the callback function with an error or falsy second parameter will disallow the socket from subscribing.
+* **unsubscribe** - Called when a socket attempts to unsubscribe from a channel. The listener function will be called with the socket, channel data, and a callback function. Calling the callback function with an error or falsy second parameter will disallow the socket from unsubscribing.
+* **publish** - Called when a socket attempts to publish data on a channel. The listener function will be called with the socket, publish data, and a callback function. Calling the callback function with an error or falsy second parameter will disallow the socket from publishing.
+* **broadcast** - Called when a socket attempts to broadcast data on all channels. The listener function will be called with the socket, broadcast data, and a callback function. Calling the callback function with an error or falsy second parameter will disallow the socket from broadcasting.
 
 ```
 tokenServer.on("authentication", function(socket, auth, callback){
@@ -150,12 +158,12 @@ tokenServer.on("authentication", function(socket, auth, callback){
 // enforce access control to publish - subscribe events
 
 tokenServer.on("subscribe", function(socket, data, callback){
-	console.log("Socket attempting to subscribe: ", data.channel);
+	console.log("Socket attempting to subscribe: ", socket.auth, data.channel);
 	callback(null, true); // socket will be allowed to subscribe
 });
 
 tokenServer.on("publish", function(socket, data, callback){
-	console.log("Socket attempting to publish: ", data.channel, data.data);
+	console.log("Socket attempting to publish: ", socket.auth, data.channel, data.data);
 	callback(null, false); // socket will not be allowed to publish
 });
 
@@ -163,12 +171,12 @@ tokenServer.on("publish", function(socket, data, callback){
 // in this example the broadcast action will be disallowed
 
 tokenServer.on("broadcast", function(socket, data, callback){
-	console.log("Socket attempting to broadcast: ", data.data);
+	console.log("Socket attempting to broadcast: ", socket.auth, data.data);
 	callback(null, true); 
 });
 
 tokenServer.on("broadcast", function(socket, data, callback){
-	console.log("Socket attempting to broadcast: ", data.data);
+	console.log("Socket attempting to broadcast: ", socket.auth, data.data);
 	callback(null, false); 
 });
 
@@ -179,7 +187,7 @@ tokenServer.removeAllListeners("authentication");
 
 ## Cleanup
 
-Sockjs does not support cookie based authentication or the passing of query parameters on a websocket HTTP upgrade request so it is not possible to entirely disallow a websocket connection. However, it is possible to force sockets to authenticate before they're allowed to do anything. If a socket does not identify itself within a certain amount of time it can be forced to disconnect. This module allows for setting a TTL on unauthenticated sockets in this manner.
+Sockjs does not support cookie based authentication nor the passing of query parameters on a websocket HTTP upgrade request so it is not possible to entirely disallow a websocket connection. However, it is possible to force sockets to authenticate before they're allowed to do anything. If a socket does not identify itself within a certain amount of time it can be forced to disconnect. This module allows for setting a TTL on unauthenticated sockets in this manner.
 
 ```
 // set a 5 second TTL 
@@ -204,43 +212,45 @@ sockets.forEach(function(socket){
 
 Developers can also use the optional publish/subscribe interface by providing an additional redis client to the module's initialization parameters. 
 
-TokenSocket clients can issue commands to subscribe themselves to channels or publish messages on a channel, however it is also possible for the server to modify socket channel subscriptions. 
+TokenSocket clients can issue commands to subscribe themselves to channels or publish messages on a channel, however it is also possible for the server to perform pub/sub commands. 
 
-## Publish a Message
+## Publish a message
 
 Publishes a message on a channel.
 
 ```
-tokenServer.publish("channel1", { foo: "bar" });
+tokenServer.publish("channel", { foo: "bar" });
 ```
 
-## Broadcast a Message
+## Broadcast a message
 
-Broadcasts a message on all channels. If this is running in a distributed environment with a shared redis host this will broadcast the message on all channels, not just the channels that sockets connected to this server instance are subscribed to.
+Broadcasts a message on all channels. If this is running in a distributed environment with a shared redis host this will broadcast the message on all channels, not just the channels that sockets connected to this server instance are subscribed to. 
+
+** This will send the message once on every channel currently known to redis. This means if your client is subscribed to five channels you will receive this message five times, once on each channel. **
 
 ```
 tokenServer.broadcast({ foo: "bar" });
 ```
 
-## Subscribe a Socket to a Channel
+## Subscribe a socket to a channel
 
 ```
 var sockets = tokenServer.sockets();
 sockets.forEach(function(socket){
-	tokenServer.subscribe(socket, "channel1");
+	tokenServer.subscribe(socket, "channel");
 });
 ```
 
-## Unsubscribe a Socket from a Channel
+## Unsubscribe a socket from a channel
 
 ```
 var sockets = tokenServer.sockets();
 sockets.forEach(function(socket){
-	tokenServer.unsubscribe(socket, "channel1");
+	tokenServer.unsubscribe(socket, "channel");
 });
 
 // or unsubscribe all sockets from a channel
-tokenServer.unsubscribeAll("channel1");
+tokenServer.unsubscribeAll("channel");
 ```
 
 ## List Channels
@@ -257,17 +267,17 @@ channels.forEach(function(channel){
 
 ## Shutdown
 
-Shut down the server by closing all sockets and unsubscribing from all channels.
+Shut down the server by closing all sockets and unsubscribing from all channels. This is synchronous.
 
 ```
-tokenServer.shutdown(); // note: this is synchronous
+tokenServer.shutdown();
 ```
 
 # Tests
 
-This module uses Mocha/Chai for testing. In order to run the tests make sure a local redis server is running on port 6379.
+This module uses Mocha, Chai, and Sinon for testing. In order to run the tests make sure a local redis server is running on port 6379 or the REDIS_HOST and REDIS_PORT environment variables are set.
 
 ```
 npm install
-grunt test
+grunt
 ```
