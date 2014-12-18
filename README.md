@@ -58,14 +58,13 @@ socketServer.installHandlers(server, socketOptions);
 
 var authenticationFn = function(req, callback){
 	doSomething(req, function(error){
-
 		if(error)
 			return callback(error); // socket will not be allowed to connect
 
 		if(Math.random() < 0.5)
 			callback(null, req.user); // socket will be issued a token and req.user will be attached to the socket
 		else
-			callback(); // socket will be issued a token and req.session will be attached to the socket
+			callback(null, true); // socket will be issued a token and req.session will be attached to the socket
 	});
 };
 
