@@ -147,6 +147,9 @@ module.exports = function(tokenServer, httpClient, TokenSocket, options){
 
 				// wait for redis to respond... I should probably mock that...
 				defer(function(){
+					assert.property(socket, "host", "Socket has host");
+					assert.property(socket, "ip", "Socket has IP address");
+					assert.property(socket, "ips", "Socket has IP addresses list");
 					assert.isTrue(authListener.called, "Auth listener was called");
 					assert.lengthOf(socket._frames, 1, "Socket has 1 response frame");
 

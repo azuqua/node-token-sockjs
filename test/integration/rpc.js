@@ -109,6 +109,28 @@ module.exports = function(tokenServer, httpClient, TokenSocket, options){
 			assert.lengthOf(socket._frames, 0, "Socket ends with no outgoing frames");
 		});
 
+		it("Should work with express route functions", function(){
+			var data = { bar: "baz" },
+				route = "ping";
+
+			assert.lengthOf(socket._frames, 0, "Socket starts with no outgoing frames");
+			socket._rpc(route, { req: data });
+			var responseFrame = JSON.parse(socket._frames.shift());
+			assert.notOk(responseFrame.error, "Response does not have error");
+			assert.equal(responseFrame.resp.bar, data.bar, "Response has correct data");
+		});
+
+		it("Should work with nested express route functions", function(){
+			var data = { bar: "foo" },
+				route = "nested.ping";
+
+			assert.lengthOf(socket._frames, 0, "Socket starts with no outgoing frames");
+			socket._rpc(route, { req: data });
+			var responseFrame = JSON.parse(socket._frames.shift());
+			assert.notOk(responseFrame.error, "Response does not have error");
+			assert.equal(responseFrame.resp.bar, data.bar, "Response has correct data");
+		});
+
 	});
 
 };
