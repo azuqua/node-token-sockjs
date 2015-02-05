@@ -59,6 +59,16 @@ module.exports = function(TokenSocketServer){
     },  
     authentication: function(req, callback){
       callback(null, req.param("allow"));
+    },
+    routes: {
+      ping: function(req, res){
+        res.json(req.body);
+      },
+      nested: {
+        ping: function(req, res){
+          res.json(req.body);
+        }
+      }
     }
   });
 
