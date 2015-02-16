@@ -34,7 +34,7 @@ The following properties are optional on the options object.
 * **customMiddleware** - Any custom middleware to apply to the token authentication route.
 * **authentication** - The authentication mechanism used to determine if a socket will be issued a token. This property can be a string or object. If it's a string then the module will check for the request session property keyed by this string. For example, the default value for this property is "auth" which will use the req.session.auth property to decide if the socket should get a token. This property can also be a function which will be passed the request object and a callback. If the callback is called with a truthy second parameter the socket will be issued a token. If the second parameter is an object then this object will be attached to the socket. If the second parameter is not an object then the request session object will be attached to the socket. See below for examples.
 * **debug** - A boolean flag used to determine if the module should log relevant actions to the console.
-* **routes** - An object, arbitrarily nested, mapping RPC function names to express route handler functions. This module will expose the express route functions as RPC endpoints for clients, most likely without requiring any changes to the express route handler function. Currently about 80% of the express API surface is implemented, however there are a few concepts that do not map cleanly from a websocket request to an HTTP request. Because of this a few functions and properties are not present on the standard "request" and "response" arguments passed to the express route functions. For a full list of what's implemented see the [utils](https://github.com/azuqua/node-token-sockjs/blob/master/lib/utils.js#L30) file that implements the mapping. **The "send" function is not implemented on the "response" argument passed to route handler functions** because it does not fit well into the request-response model implemented by the RPC interface. To send chunked data use the pubsub network or a RPC invokation from the server to the client. Also note that the websocket data will not be passed through the middleware queue. See below for examples.
+* **routes** - An object, arbitrarily nested, mapping RPC function names to express route handler functions. This module will expose the express route functions as RPC endpoints for clients, most likely without requiring any changes to the express route handler function. Currently about 80% of the express API surface is implemented, however there are a few concepts that do not map cleanly from a websocket request to an HTTP request. Because of this a few functions and properties are not present on the standard "request" and "response" arguments passed to the express route functions. For a full list of what's implemented see the [utils](https://github.com/azuqua/node-token-sockjs/blob/master/lib/utils.js#L30) file that implements the mapping. **The "send" function is not implemented on the "response" argument passed to route handler functions** because it does not fit well into the request-response model implemented by the RPC interface. To send chunked data use the pubsub network or a RPC invokation from the server to the client. Also note that the websocket data will not be passed through the middleware queue. The client will be able to access the http headers with the "_headers" property and the response code with the "_code" property on the RPC response. See below for examples.
 
 ```
 var express = require("express"),
@@ -80,7 +80,6 @@ var readUsers = function(req, res){
 	});
 };
 
-// wouldn't it be nice if this route just worked over websockets too...
 app.get("/user/read", readUsers);
 
 var controller = {
@@ -109,7 +108,7 @@ var tokenServer = new TokenSocketServer(app, redisClient, socketServer, {
 	debug: app.get("env") !== "production",
 	routes: {
 		user: {
-			read: readUsers // now this can be called via the RPC interface from the clients
+			read: readUsers // now this can be called via the RPC interface
 		}
 	}
 });
@@ -150,8 +149,6 @@ setInterval(function(){
 	});
 }, 1000);
 ```
-
-You may notice that the fourth argument to any RPC function on the server is the SockJS socket instance making the request. In many cases you will not use this argument. However, it's there in order to allow developers to make inner RPC calls, perform pub/sub actions, or other functionality exposed and managed by node-token-sockjs. Please resist the urge to make any direct calls to any lower level sockjs functions (even the write function) as they will very likely not give the desired results on the client. Should the client receive any messages it cannot recognize it will silently drop them so any direct calls to socket.write() will most likely not do anything. In the future this module may wrap the socket instance in an object to hide the inner sockjs functions so if you do use the inner sockjs functions directly be aware that the API surface there is not directly supported by this module and may disappear one day. The RPC and pub/sub interfaces should be sufficient for any form of communication to the client.
 
 ## Events
 
