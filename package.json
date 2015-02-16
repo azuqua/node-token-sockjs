@@ -52,8 +52,7 @@
     "redis": "~0.10.1",
     "restjs": "azuqua/restjs",
     "sinon": "^1.12.1",
-    "sockjs": "~0.3.8",
-    "token-sockjs-client": "^2.0.0"
+    "sockjs": "~0.3.8"
   },
   "main": "./index.js"
 }

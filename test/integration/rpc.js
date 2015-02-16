@@ -118,6 +118,9 @@ module.exports = function(tokenServer, httpClient, TokenSocket, options){
 			var responseFrame = JSON.parse(socket._frames.shift());
 			assert.notOk(responseFrame.error, "Response does not have error");
 			assert.equal(responseFrame.resp.bar, data.bar, "Response has correct data");
+			assert.isObject(responseFrame.resp._headers, "Response has http headers");
+			assert.equal(responseFrame.resp._headers["content-type"], "application/json");
+			assert.isNumber(responseFrame.resp._code, "Response has http code");
 		});
 
 		it("Should work with nested express route functions", function(){
@@ -129,6 +132,9 @@ module.exports = function(tokenServer, httpClient, TokenSocket, options){
 			var responseFrame = JSON.parse(socket._frames.shift());
 			assert.notOk(responseFrame.error, "Response does not have error");
 			assert.equal(responseFrame.resp.bar, data.bar, "Response has correct data");
+			assert.isObject(responseFrame.resp._headers, "Response has http headers");
+			assert.equal(responseFrame.resp._headers["content-type"], "application/json");
+			assert.isNumber(responseFrame.resp._code, "Response has http code");
 		});
 
 	});
