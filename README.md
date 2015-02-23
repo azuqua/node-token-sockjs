@@ -1,6 +1,14 @@
 Node Token Sockjs Server
 ========================
 
+[![NPM Version][npm-image]][npm-url]
+[![NPM Downloads][downloads-image]][downloads-url]
+
+[npm-image]: https://img.shields.io/npm/v/node-token-sockjs.svg?style=flat
+[npm-url]: https://npmjs.org/package/node-token-sockjs
+[downloads-image]: https://img.shields.io/npm/dm/node-token-sockjs.svg?style=flat
+[downloads-url]: https://npmjs.org/package/node-token-sockjs
+
 A wrapper around [Express](http://expressjs.com/), [Sockjs](https://github.com/sockjs/sockjs-node), and [Redis](http://redis.io/) that provides addtional websocket functionality.
 
 This module is designed to support higher level application functionality on top of websockets or websocket emulation via sockjs. Currently this module provides a token-based authentication mechanism, a publish-subscribe interface, and a bidirectional RPC interface. 
