@@ -136,7 +136,7 @@ tokenServer.socketController.ping = function(auth, data, callback, socket){
 	// @auth is the data attached to the socket upon authentication
 	// @data is the data provided by the client when issuing the RPC call
 	// @callback is a function used to issue the final response to the client
-	// @socket is an optional parameter that can be used to issue inner RPC calls, pub/sub operations, etc. If you use this please read the note below this section.
+	// @socket is an optional parameter that can be used to issue inner RPC calls, pub/sub operations, etc.
 
 	doSomethingAsync(data, function(error, result){
 		if(error)
@@ -284,7 +284,6 @@ List the channels that sockets connected to this server instance have subscribed
 ```
 var channels = tokenServer.channels();
 channels.forEach(function(channel){
-	// maybe publish a message on all local channels
 	tokenServer.publish(channel, { foo: "bar" });
 });
 ```
