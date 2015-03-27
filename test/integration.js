@@ -73,6 +73,8 @@ module.exports = function(TokenSocketServer){
     filter: sinon.spy(function(socket, channel, message){
       if(channel === "baz")
         message.foo = "bar";
+      else if(channel === "bad")
+        message = null;
       return message;
     })
   });
