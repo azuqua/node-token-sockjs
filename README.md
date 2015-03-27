@@ -43,6 +43,7 @@ The following properties are optional on the options object.
 * **authentication** - The authentication mechanism used to determine if a socket will be issued a token. This property can be a string or object. If it's a string then the module will check for the request session property keyed by this string. For example, the default value for this property is "auth" which will use the req.session.auth property to decide if the socket should get a token. This property can also be a function which will be passed the request object and a callback. If the callback is called with a truthy second parameter the socket will be issued a token. If the second parameter is an object then this object will be attached to the socket. If the second parameter is not an object then the request session object will be attached to the socket. See below for examples.
 * **debug** - A boolean flag used to determine if the module should log relevant actions to the console.
 * **routes** - An object, arbitrarily nested, mapping RPC function names to express route handler functions. This module will expose the express route functions as RPC endpoints for clients, most likely without requiring any changes to the express route handler function. Currently about 80% of the express API surface is implemented, however there are a few concepts that do not map cleanly from a websocket request to an HTTP request. Because of this a few functions and properties are not present on the standard "request" and "response" arguments passed to the express route functions. For a full list of what's implemented see the [utils](https://github.com/azuqua/node-token-sockjs/blob/master/lib/utils.js#L30) file that implements the mapping. **The "send" function is not implemented on the "response" argument passed to route handler functions** because it does not fit well into the request-response model implemented by the RPC interface. To send chunked data use the pubsub network or a RPC invokation from the server to the client. Also note that the websocket data will not be passed through the middleware queue. The client will be able to access the http headers with the "_headers" property and the response code with the "_code" property on the RPC response. See below for examples.
+* **filter** - A synchronous function that will be called after a message is received on the redis publish-subscribe interface but before the message is distributed to websocket clients. This can be used to conditionally modify messages before being sent to clients over the pubsub network. See the publish-subscribe section for examples.
 
 ```
 var express = require("express"),
@@ -275,6 +276,32 @@ sockets.forEach(function(socket){
 
 // or unsubscribe all sockets from a channel
 tokenServer.unsubscribeAll("channel");
+```
+
+## Filtering Messages
+
+By adding an optional **synchronous** function to the "filter" property on the socket server's intialization options developers can filter messages on the pubsub network before the messages are sent to the clients. This function will be called with the socket, channel, and message as arguments. The return value of this function will be sent to the client, however **if the return value is falsy the server will not send the message to the client.**
+
+```
+var tokenServer = new TokenSocketServer(app, redisClient, socketServer, {
+	prefix: socketOptions.prefix,
+	tokenRoute: "/socket/token",
+	pubsubClient: pubsubClient,
+	socketController: controller,
+	customMiddleware: customMiddleware,
+	authentication: authenticationFn,
+	debug: app.get("env") !== "production",
+	routes: {
+		user: {
+			read: readUsers // now this can be called via the RPC interface
+		}
+	},
+	filter: function(socket, channel, message){
+		if(socket.auth.email === "foo")
+			delete message.bar;
+		return message;
+	}
+});
 ```
 
 ## List Channels

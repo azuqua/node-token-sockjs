@@ -400,11 +400,30 @@ module.exports = function(tokenServer, httpClient, TokenSocket, options){
 		});
 
 		it("Should allow users to filter outgoing data on the pubsub network", function(done){
-			
+			var testChannel = "baz",
+				testMessage = { a: "b" };
 
+			assert.lengthOf(socket._frames, 0, "Socket has no outgoing frames");
+			tokenServer.subscribe(socket, testChannel);
+			defer(function(){
+				assert.lengthOf(socket._frames, 1, "Socket has one frame");
+				var frame = socket._frames.shift();
+				assert.ok(frame, "Frame is ok");
+				frame = JSON.parse(frame);
+				assert.ok(frame.internal, "First frame is internal subscribe frame");
 
+				tokenServer.publish(testChannel, testMessage);
 
-
+				defer(function(){
+					assert.lengthOf(socket._frames, 1, "Socket has one frame");
+					frame = socket._frames.shift();
+					assert.ok(frame, "Frame is ok");
+					frame = JSON.parse(frame);
+					assert.equal(frame.message.foo, "bar", "Filter fn changed outgoing data");
+					assert.isTrue(tokenServer._filter.called, "Filter was called");
+					done();
+				});
+			});
 		});
 
 	});
