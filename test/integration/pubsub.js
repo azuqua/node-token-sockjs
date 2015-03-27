@@ -399,6 +399,14 @@ module.exports = function(tokenServer, httpClient, TokenSocket, options){
 			}, done);
 		});
 
+		it("Should allow users to filter outgoing data on the pubsub network", function(done){
+			
+
+
+
+
+		});
+
 	});
 
 };
