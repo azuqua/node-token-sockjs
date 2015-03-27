@@ -69,7 +69,14 @@ module.exports = function(TokenSocketServer){
           res.json(req.body);
         }
       }
-    }
+    },
+    filter: sinon.spy(function(socket, channel, message){
+      if(channel === "baz")
+        message.foo = "bar";
+      else if(channel === "bad")
+        message = null;
+      return message;
+    })
   });
 
   describe("Integration tests", function(){

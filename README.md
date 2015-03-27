@@ -42,7 +42,8 @@ The following properties are optional on the options object.
 * **customMiddleware** - Any custom middleware to apply to the token authentication route.
 * **authentication** - The authentication mechanism used to determine if a socket will be issued a token. This property can be a string or object. If it's a string then the module will check for the request session property keyed by this string. For example, the default value for this property is "auth" which will use the req.session.auth property to decide if the socket should get a token. This property can also be a function which will be passed the request object and a callback. If the callback is called with a truthy second parameter the socket will be issued a token. If the second parameter is an object then this object will be attached to the socket. If the second parameter is not an object then the request session object will be attached to the socket. See below for examples.
 * **debug** - A boolean flag used to determine if the module should log relevant actions to the console.
-* **routes** - An object, arbitrarily nested, mapping RPC function names to express route handler functions. This module will expose the express route functions as RPC endpoints for clients, most likely without requiring any changes to the express route handler function. Currently about 80% of the express API surface is implemented, however there are a few concepts that do not map cleanly from a websocket request to an HTTP request. Because of this a few functions and properties are not present on the standard "request" and "response" arguments passed to the express route functions. For a full list of what's implemented see the [utils](https://github.com/azuqua/node-token-sockjs/blob/master/lib/utils.js#L30) file that implements the mapping. **The "send" function is not implemented on the "response" argument passed to route handler functions** because it does not fit well into the request-response model implemented by the RPC interface. To send chunked data use the pubsub network or a RPC invokation from the server to the client. Also note that the websocket data will not be passed through the middleware queue. The client will be able to access the http headers with the "_headers" property and the response code with the "_code" property on the RPC response. See below for examples.
+* **routes** - An object, arbitrarily nested, mapping RPC function names to express route handler functions. This module will expose the express route functions as RPC endpoints for clients, most likely without requiring any changes to the express route handler function. Currently about 80% of the express API surface is implemented, however there are a few concepts that do not map cleanly from a websocket request to an HTTP request. Because of this a few functions and properties are not present on the standard "request" and "response" arguments passed to the express route functions. For a full list of what's implemented see the [utils](https://github.com/azuqua/node-token-sockjs/blob/master/lib/utils.js#L47) file that implements the mapping. **The "send" function is not implemented on the "response" argument passed to route handler functions** because it does not fit well into the request-response model implemented by the RPC interface. To send chunked data use the pubsub network or a RPC invokation from the server to the client. Also note that the websocket data will not be passed through the middleware queue. The client will be able to access the http headers with the "_headers" property and the response code with the "_code" property on the RPC response. See below for examples.
+* **filter** - A **synchronous** function that will be called after a message is received on the redis publish-subscribe interface but before the message is distributed to websocket clients. This can be used to conditionally modify messages before being sent to clients over the pub/sub network. [See the publish-subscribe section for examples.](#filtering-messages)
 
 ```
 var express = require("express"),
@@ -127,11 +128,9 @@ var tokenServer = new TokenSocketServer(app, redisClient, socketServer, {
 
 This module supports a bidirectional RPC interface between the server and client. This means the client can issue calls to the server and the server can issue calls to the client with a simple function call/callback interface. The examples here will show how to use the RPC API surface from the server. See the [client docs](https://github.com/azuqua/token-sockjs-client#rpc-interface) for examples of RPC functions going in the other direction.
 
-```
-// set up this server to accept RPC commands from the clients
-// these functions can be created at initalization with the socketController option or can be modified dynamically at run time
-// these examples will assume the tokenServer already exists and show how to dynamically modify RPC functions
+This example shows how to dynamically modify the socketController after the server has been initialized. 
 
+```
 tokenServer.socketController.ping = function(auth, data, callback, socket){
 	// @auth is the data attached to the socket upon authentication
 	// @data is the data provided by the client when issuing the RPC call
@@ -150,12 +149,10 @@ tokenServer.socketController.ping = function(auth, data, callback, socket){
 // call an RPC function on the client
 
 var sockets = tokenServer.sockets();
-setInterval(function(){
-	var socket = sockets[Math.random() * (sockets.length - 1) | 0];
-	tokenServer.rpc(socket, "saySomething", { bart: "Cant sleep clown will eat me" }, function(error, resp){
-		console.log("Socket responded: ", error, resp);
-	});
-}, 1000);
+var socket = sockets[Math.random() * (sockets.length - 1) | 0];
+tokenServer.rpc(socket, "saySomething", { foo: "bar" }, function(error, resp){
+	console.log("Socket responded: ", error, resp);
+});
 ```
 
 ## Events
@@ -165,7 +162,7 @@ The server is extended by an EventEmitter so developers can attach multiple even
 **If multiple listener functions are bound to the same event only one of them needs to return an error or falsy value for the action to be disallowed.**
 
 * **authentication** - Called when the socket successfully authenticates. The listener function will be called with the socket, authentication data, and a callback function. The callback function does not take any arguments.
-* **subscribe** - Called when a socket attempts to subscribe to a channel. The listener function will be called the socket, subscription data, and a callback function. Calling the callback function with an error or falsy second parameter will disallow the socket from subscribing.
+* **subscribe** - Called when a socket attempts to subscribe to a channel. The listener function will be called with the socket, subscription data, and a callback function. Calling the callback function with an error or falsy second parameter will disallow the socket from subscribing.
 * **unsubscribe** - Called when a socket attempts to unsubscribe from a channel. The listener function will be called with the socket, channel data, and a callback function. Calling the callback function with an error or falsy second parameter will disallow the socket from unsubscribing.
 * **publish** - Called when a socket attempts to publish data on a channel. The listener function will be called with the socket, publish data, and a callback function. Calling the callback function with an error or falsy second parameter will disallow the socket from publishing.
 * **broadcast** - Called when a socket attempts to broadcast data on all channels. The listener function will be called with the socket, broadcast data, and a callback function. Calling the callback function with an error or falsy second parameter will disallow the socket from broadcasting.
@@ -179,7 +176,7 @@ tokenServer.on("authentication", function(socket, auth, callback){
 	});
 });
 
-// enforce access control to publish - subscribe events
+// enforce access control on publish - subscribe events
 
 tokenServer.on("subscribe", function(socket, data, callback){
 	console.log("Socket attempting to subscribe: ", socket.auth, data.channel);
@@ -191,7 +188,6 @@ tokenServer.on("publish", function(socket, data, callback){
 	callback(null, false); // socket will not be allowed to publish
 });
 
-// when multiple listeners are bound to an event only one of them need return an error or falsy value for the action to be disallowed
 // in this example the broadcast action will be disallowed
 
 tokenServer.on("broadcast", function(socket, data, callback){
@@ -250,8 +246,6 @@ tokenServer.publish("channel", { foo: "bar" });
 
 Broadcasts a message on all channels. If this is running in a distributed environment with a shared redis host this will broadcast the message on all channels, not just the channels that sockets connected to this server instance are subscribed to. 
 
-**This will send the message once on every channel currently known to redis. This means if a client is subscribed to five channels it will receive this message five times, once on each channel.**
-
 ```
 tokenServer.broadcast({ foo: "bar" });
 ```
@@ -275,6 +269,22 @@ sockets.forEach(function(socket){
 
 // or unsubscribe all sockets from a channel
 tokenServer.unsubscribeAll("channel");
+```
+
+## Filtering Messages
+
+By adding an optional **synchronous** function to the "filter" property on the socket server's initialization options developers can filter messages on the pub/sub network before the messages are sent to the clients. This function will be called with the socket, channel, and message as arguments. The return value of this function will be sent to the websocket client, however **if the return value is falsy the server will not send the message to the client.**
+
+```
+var tokenServer = new TokenSocketServer(app, redisClient, socketServer, {
+	pubsubClient: pubsubClient,
+	// ...
+	filter: function(socket, channel, message){
+		if(socket.auth.email === "foo")
+			delete message.bar;
+		return message;
+	}
+});
 ```
 
 ## List Channels
