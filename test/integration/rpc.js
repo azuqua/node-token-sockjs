@@ -137,6 +137,19 @@ module.exports = function(tokenServer, httpClient, TokenSocket, options){
 			assert.isNumber(responseFrame.resp._code, "Response has http code");
 		});
 
+		it("Should handle ping requests from clients", function(){
+			assert.isFunction(tokenServer.socketController._ping, "Server has ping function");
+			var expected = { message: "pong" },
+				route = "_ping",
+				data = {};
+
+			assert.lengthOf(socket._frames, 0, "Socket starts with no outgoing frames");
+			socket._rpc(route, { req: data });
+			var responseFrame = JSON.parse(socket._frames.shift());
+			assert.notOk(responseFrame.error, "Response does not have error");
+			assert.deepEqual(responseFrame.resp, expected, "Ping response is correct");
+		});
+
 	});
 
 };

@@ -20,6 +20,7 @@ module.exports = function(TokenSocketServer){
 			"broadcast",
 			"channels",
 			"sockets",
+			"channelSockets",
 			"shutdown"
 		];
 

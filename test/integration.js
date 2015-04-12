@@ -76,7 +76,8 @@ module.exports = function(TokenSocketServer){
       else if(channel === "bad")
         message = null;
       return message;
-    })
+    }),
+    ping: true
   });
 
   describe("Integration tests", function(){
