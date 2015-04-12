@@ -42,8 +42,9 @@ The following properties are optional on the options object.
 * **customMiddleware** - Any custom middleware to apply to the token authentication route.
 * **authentication** - The authentication mechanism used to determine if a socket will be issued a token. This property can be a string or object. If it's a string then the module will check for the request session property keyed by this string. For example, the default value for this property is "auth" which will use the req.session.auth property to decide if the socket should get a token. This property can also be a function which will be passed the request object and a callback. If the callback is called with a truthy second parameter the socket will be issued a token. If the second parameter is an object then this object will be attached to the socket. If the second parameter is not an object then the request session object will be attached to the socket. See below for examples.
 * **debug** - A boolean flag used to determine if the module should log relevant actions to the console.
-* **routes** - An object, arbitrarily nested, mapping RPC function names to express route handler functions. This module will expose the express route functions as RPC endpoints for clients, most likely without requiring any changes to the express route handler function. Currently about 80% of the express API surface is implemented, however there are a few concepts that do not map cleanly from a websocket request to an HTTP request. Because of this a few functions and properties are not present on the standard "request" and "response" arguments passed to the express route functions. For a full list of what's implemented see the [utils](https://github.com/azuqua/node-token-sockjs/blob/master/lib/utils.js#L47) file that implements the mapping. **The "send" function is not implemented on the "response" argument passed to route handler functions** because it does not fit well into the request-response model implemented by the RPC interface. To send chunked data use the pubsub network or a RPC invokation from the server to the client. Also note that the websocket data will not be passed through the middleware queue. The client will be able to access the http headers with the "_headers" property and the response code with the "_code" property on the RPC response. See below for examples.
+* **routes** - An object, arbitrarily nested, mapping RPC function names to express route handler functions. This module will expose the express route functions as RPC endpoints for clients, most likely without requiring any changes to the express route handler function. Currently about 80% of the express API surface is implemented, however there are a few concepts that do not map cleanly from a websocket request to an HTTP request. Because of this a few functions and properties are not present on the standard "request" and "response" arguments passed to the express route functions. For a full list of what's implemented see the [utils](https://github.com/azuqua/node-token-sockjs/blob/master/lib/utils.js#L47) file that implements the mapping. **The "send" function is not implemented on the "response" argument passed to route handler functions** because it does not fit well into the request-response model implemented by the RPC interface. To send chunked data use the pub/sub network or a RPC invokation from the server to the client. Also note that the websocket data will not be passed through the middleware queue. The client will be able to access the http headers with the "_headers" property and the response code with the "_code" property on the RPC response. See below for examples.
 * **filter** - A **synchronous** function that will be called after a message is received on the redis publish-subscribe interface but before the message is distributed to websocket clients. This can be used to conditionally modify messages before being sent to clients over the pub/sub network. [See the publish-subscribe section for examples.](#filtering-messages)
+* **ping** - A boolean flag used to toggle if the server should automatically handle ping requests from clients. Default value is false. This can be useful for maintaining open connections across load balancers or proxies that close unused connections.
 
 ```
 var express = require("express"),
@@ -79,7 +80,7 @@ var authenticationFn = function(req, callback){
 };
 
 var readUsers = function(req, res){
-	console.log("Got request to read users", req.hostname, req.ip, req.headers, req.query);
+	console.log("Request to read users:", req.hostname, req.ip, req.headers, req.query, req.body);
 	User.read().then(function(users){
 		res.json(users);
 	})
@@ -119,7 +120,8 @@ var tokenServer = new TokenSocketServer(app, redisClient, socketServer, {
 		user: {
 			read: readUsers // now this can be called via the RPC interface
 		}
-	}
+	},
+	ping: true
 });
 
 ```
@@ -269,6 +271,14 @@ sockets.forEach(function(socket){
 
 // or unsubscribe all sockets from a channel
 tokenServer.unsubscribeAll("channel");
+```
+
+## Inspect channel sockets
+
+```
+var channel = "foo";
+var sockets = tokenSocket.channelSockets(channel);
+console.log("Channel " + channel + " has " + sockets.length + " sockets connected.");
 ```
 
 ## Filtering Messages
