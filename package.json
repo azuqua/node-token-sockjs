@@ -1,7 +1,7 @@
 {
   "name": "node-token-sockjs",
   "description": "A wrapper around express, sockjs-node, and redis that provides token based authentication, a websocket based rpc-like abstraction, and an optional publish subscribe interface.",
-  "version": "2.1.7",
+  "version": "2.1.8",
   "author": "Azuqua",
   "keywords": [
     "azuqua",
