@@ -9,7 +9,9 @@ module.exports = function (grunt) {
         "lib/**/*.js",
         "test/**/*.js"
       ],
-      options: {}
+      options: {
+        laxbreak: true
+      }
     },
 
     mochaTest: {

@@ -37,8 +37,8 @@
     "url": "git://github.com/azuqua/node-token-sockjs"
   },
   "dependencies": {
-    "async": "^0.2.10",
-    "lodash": "^2.4.1",
+    "async": "^2.1.4",
+    "lodash": "^4.0.0",
     "uuid": "^3.0.0"
   },
   "devDependencies": {
