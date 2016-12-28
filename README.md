@@ -25,7 +25,7 @@ This module is designed to support higher level application functionality on top
 
 This module supports the following initialization parameters. The first three named arguments are required and the last options object is optional.
 
-```
+```javascript
 var tokenServer = new TokenSocketServer(app, redisClient, socketServer, options);
 ```
 
@@ -46,7 +46,7 @@ The following properties are optional on the options object.
 * **filter** - A **synchronous** function that will be called after a message is received on the redis publish-subscribe interface but before the message is distributed to websocket clients. This can be used to conditionally modify messages before being sent to clients over the pub/sub network. [See the publish-subscribe section for examples.](#filtering-messages)
 * **ping** - A boolean flag used to toggle if the server should automatically handle ping requests from clients. Default value is false. This can be useful for maintaining open connections across load balancers or proxies that close unused connections.
 
-```
+```javascript
 var express = require("express"),
 	http = require("http"),
 	redis = require("redis"),
@@ -132,7 +132,7 @@ This module supports a bidirectional RPC interface between the server and client
 
 This example shows how to dynamically modify the socketController after the server has been initialized. 
 
-```
+```javascript
 tokenServer.socketController.ping = function(auth, data, callback, socket){
 	// @auth is the data attached to the socket upon authentication
 	// @data is the data provided by the client when issuing the RPC call
@@ -169,7 +169,7 @@ The server is extended by an EventEmitter so developers can attach multiple even
 * **publish** - Called when a socket attempts to publish data on a channel. The listener function will be called with the socket, publish data, and a callback function. Calling the callback function with an error or falsy second parameter will disallow the socket from publishing.
 * **broadcast** - Called when a socket attempts to broadcast data on all channels. The listener function will be called with the socket, broadcast data, and a callback function. Calling the callback function with an error or falsy second parameter will disallow the socket from broadcasting.
 
-```
+```javascript
 tokenServer.on("authentication", function(socket, auth, callback){
 	// maybe immediately say hello
 	tokenServer.rpc(socket, "sayHello", { message: "hello, " + auth.email }, function(error, resp){
@@ -211,7 +211,7 @@ tokenServer.removeAllListeners("authentication");
 
 Sockjs does not support cookie based authentication nor the passing of query parameters on a websocket HTTP upgrade request so it is not possible to entirely disallow a websocket connection. However, it is possible to force sockets to authenticate before they're allowed to do anything. If a socket does not identify itself within a certain amount of time it can be forced to disconnect. This module allows for setting a TTL on unauthenticated sockets in this manner.
 
-```
+```javascript
 // set a 5 second TTL 
 tokenServer.enableCleanup(5000); 
 
@@ -221,7 +221,7 @@ tokenServer.disableCleanup();
 
 ## List Sockets
 
-```
+```javascript
 var sockets = tokenServer.sockets();
 sockets.forEach(function(socket){
 	console.log("Socket ID: ", socket.sid);
@@ -240,7 +240,7 @@ TokenSocket clients can issue commands to subscribe themselves to channels or pu
 
 Publishes a message on a channel.
 
-```
+```javascript
 tokenServer.publish("channel", { foo: "bar" });
 ```
 
@@ -248,13 +248,13 @@ tokenServer.publish("channel", { foo: "bar" });
 
 Broadcasts a message on all channels. If this is running in a distributed environment with a shared redis host this will broadcast the message on all channels, not just the channels that sockets connected to this server instance are subscribed to. 
 
-```
+```javascript
 tokenServer.broadcast({ foo: "bar" });
 ```
 
 ## Subscribe a socket to a channel
 
-```
+```javascript
 var sockets = tokenServer.sockets();
 sockets.forEach(function(socket){
 	tokenServer.subscribe(socket, "channel");
@@ -263,7 +263,7 @@ sockets.forEach(function(socket){
 
 ## Unsubscribe a socket from a channel
 
-```
+```javascript
 var sockets = tokenServer.sockets();
 sockets.forEach(function(socket){
 	tokenServer.unsubscribe(socket, "channel");
@@ -275,7 +275,7 @@ tokenServer.unsubscribeAll("channel");
 
 ## Inspect channel sockets
 
-```
+```javascript
 var channel = "foo";
 var sockets = tokenSocket.channelSockets(channel);
 console.log("Channel " + channel + " has " + sockets.length + " sockets connected.");
@@ -285,7 +285,7 @@ console.log("Channel " + channel + " has " + sockets.length + " sockets connecte
 
 By adding an optional **synchronous** function to the "filter" property on the socket server's initialization options developers can filter messages on the pub/sub network before the messages are sent to the clients. This function will be called with the socket, channel, and message as arguments. The return value of this function will be sent to the websocket client, however **if the return value is falsy the server will not send the message to the client.**
 
-```
+```javascript
 var tokenServer = new TokenSocketServer(app, redisClient, socketServer, {
 	pubsubClient: pubsubClient,
 	// ...
@@ -301,7 +301,7 @@ var tokenServer = new TokenSocketServer(app, redisClient, socketServer, {
 
 List the channels that sockets connected to this server instance have subscribed to.
 
-```
+```javascript
 var channels = tokenServer.channels();
 channels.forEach(function(channel){
 	tokenServer.publish(channel, { foo: "bar" });
@@ -312,7 +312,7 @@ channels.forEach(function(channel){
 
 Shut down the server by closing all sockets and unsubscribing from all channels. This is synchronous.
 
-```
+```javascript
 tokenServer.shutdown();
 ```
 
